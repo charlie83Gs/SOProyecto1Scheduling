@@ -67,7 +67,7 @@ class FileDecoder:
     #returns an array of process objects
     def decodeFile(self,pfile):
         processes = []
-        lines = pFile.readlines()	
+        lines = pfile.readlines()	
         for i in range(len(lines)):
             pieces = lines[i].split(' ')
             period = int(pieces[0])
@@ -192,10 +192,11 @@ class RateMonotonicScheduler:
             nextTime = min(nextTime, process.getNextPeriodStartTime())
         return nextTime
 
-
+'''
 pFile = open("test","r")
 decoder = FileDecoder()
-decoded = decoder.decodeFile(pFile)	
+decoded = decoder.decodeFile(pFile)
 scheduler = RateMonotonicScheduler(300)
 scheduler.schedule(decoded)
 pFile.close() 
+'''
