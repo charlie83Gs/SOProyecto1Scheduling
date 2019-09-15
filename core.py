@@ -25,10 +25,29 @@ class TimeStamp:
     def printSelfPart(self):
         print(str(self.time) +": P" + str(self.process.pid))
 
+    def toString(self):
+        return  "P" + str(self.process.pid) +"\t\t\t"+ str(self.time) + "\t\t\t"+ str(self.time+self.process.duration)
+    
+    def toPartString(self):
+        return "P" + str(self.process.pid) + "\t\t\t"+str(self.time)
+
 class ScheduleResult:
     def __init__(self, timeLine, missesLine):
         self.timeLine = timeLine
         self.missesLine = missesLine
+
+    def toString(self):
+        result = "------Timeline------ \n"
+        result += "Process \tStart \t\tEnd \n"
+        for i in range(len(self.timeLine)):
+            result += self.timeLine[i].toString() +  "\n"
+
+        result += "\n------Missed Deathlines------ \n"
+        result += "Process \tTime \n"
+        for i in range(len(self.missesLine)):
+            result += self.missesLine[i].toPartString() +  "\n"
+        
+        return result
 
 class Process:
     def __init__(self,period, duration,pid):
@@ -40,7 +59,7 @@ class Process:
     
     def printSelf(self):
         print("P" +str(self.pid)+"    " + "period:" +str(self.period)+"   -   duration:"+ str(self.duration))
-
+    
     #returns next time in wich this should execute
     def getNextPeriodStartTime(self):
         return self.period*self.lastPeriod
