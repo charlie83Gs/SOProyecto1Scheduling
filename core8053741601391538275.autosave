@@ -1,8 +1,9 @@
 import math
 import sys
 #TODO
-#add takeover of execution when a higher priority algorithm starts
-
+#add death line to both algorithms
+#if there is not time to complete current procces before next skip it
+#fix taking procesor of other process if is next with closest time
 
 
 #utility fuinctions
@@ -18,22 +19,21 @@ def printMList(tlist):
         timeStamp.printSelfPart() 
 
 class TimeStamp:
-    def __init__(self, simTime, process,duration):
-        self.simTime = simTime
+    def __init__(self, time, process):
+        self.time = time
         self.process = process
-        self.duration = duration
     
     def printSelf(self):
-        print(str(self.simTime) + "---"+str(self.simTime+self.duration)+": P" + str(self.process.pid))
+        print(str(self.time) + "---"+str(self.time+self.process.duration)+": P" + str(self.process.pid))
 
     def printSelfPart(self):
-        print(str(self.simTime) +": P" + str(self.process.pid))
+        print(str(self.time) +": P" + str(self.process.pid))
 
     def toString(self):
-        return  "P" + str(self.process.pid) +"\t\t\t"+ str(int(self.simTime)) + "\t\t\t"+ str(int(self.simTime+self.duration))
+        return  "P" + str(self.process.pid) +"\t\t\t"+ str(int(self.time)) + "\t\t\t"+ str(int(self.time+self.process.duration))
     
     def toPartString(self):
-        return "P" + str(self.process.pid) + "\t\t\t"+str(int(self.simTime))
+        return "P" + str(self.process.pid) + "\t\t\t"+str(int(self.time))
 
 class ScheduleResult:
     def __init__(self, timeLine, missesLine):
@@ -64,30 +64,23 @@ class Process:
     def printSelf(self):
         print("P" +str(self.pid)+"    " + "period:" +str(self.period)+"   -   duration:"+ str(self.duration))
     
-    #returns next simTime in wich this should execute
+    #returns next time in wich this should execute
     def getNextPeriodStartTime(self):
         return self.period*self.lastPeriod
     def getNextPeriodEndTime(self):
         return self.period*(self.lastPeriod+1)
-    def getNextTime(self, simTime):
-        return int(math.ceil(float(simTime)/self.period))*self.period
     
     #executes current process, returns missed periods
-    def execute(self, simTime):
+    def execute(self, time):
         missed = []
-        newPeriod = math.floor(simTime/self.period + 1)
+        newPeriod = math.floor(time/self.period + 1)
         self.lastPeriod += 1
         while(self.lastPeriod < newPeriod):
-            missed += [TimeStamp(self.lastPeriod*self.period,self,self.duration)]
+            missed += [TimeStamp(self.lastPeriod*self.period,self)]
             self.lastPeriod += 1
         self.lastPeriod = newPeriod
         return missed
 
-    
-
-    def reset(self):
-        self.lastPeriod = 0 
-    
 
 
 
@@ -115,30 +108,24 @@ class EdfScheduler:
         self.simTime = simulationTime 
     #recibes :
     # a list of proceses
-    # a simulation simTime
+    # a simulation time
     # returns a Timeline result
     def schedule(self, processes):
-        #reset procces current period to restart n
-        for process in processes:
-            process.reset()
-        
         simTime = 0
         lostDeathLines = []
         timeline = []
-        #print(processes)
-        while(simTime < self.simTime):
-            nextProcess = self.getNext(processes,simTime)
-            #print("time "+ str(simTime))
+        while(time < self.simTime):
+            nextProcess = self.getNext(processes,time)
+            
             if(nextProcess is not None):
-                #print("found process")
                 #nextProcess.printSelf()
-                missed = nextProcess.execute(simTime)
+                missed = nextProcess.execute(time)
                 lostDeathLines += missed
                 #add execution to timeline
-                timeline += [TimeStamp(simTime,nextProcess,nextProcess.duration)]
-                simTime += nextProcess.duration
+                timeline += [TimeStamp(time,nextProcess)]
+                time += nextProcess.duration
             else:
-                simTime = self.getNextTime(simTime, processes)
+                time = self.getNextTime(time, processes)
 
         
         #get all ines that were remaining
@@ -151,26 +138,27 @@ class EdfScheduler:
         
         return ScheduleResult(timeline,lostDeathLines)
 
-    def getNext(self,processes,simTime):
+    def getNext(self,processes,time):
         nextProcess = None
         for index in range(len(processes)):
             process = processes[index]
             #if process has not executed
-            if(process.getNextPeriodStartTime() <= simTime and process.duration + simTime < process.getNextPeriodEndTime()):
+            if(process.getNextPeriodStartTime() <= time ):
                 #if process is the firt process to be iterated store as best solution
                 if(nextProcess is None):
                     nextProcess = process
                 #if process is executed before stored best process select the current proces
                 elif(nextProcess.getNextPeriodEndTime() > process.getNextPeriodEndTime()):
                     nextProcess = process
+        
         return nextProcess
     
-    #gets the closest start simTime of a process 
-    def getNextTime(self,simTime,processes):
+    #gets the closest start time of a process 
+    def getNextTime(self,time,processes):
         nextTime = sys.maxsize
         for index in range(len(processes)):
             process = processes[index]
-            nextTime = min(nextTime, process.getNextTime(simTime))
+            nextTime = min(nextTime, process.getNextPeriodStartTime())
         return nextTime
             
 class RateMonotonicScheduler:
@@ -178,27 +166,23 @@ class RateMonotonicScheduler:
         self.simTime = simulationTime 
     #recibes :
     # a list of proceses
-    # a simulation simTime
+    # a simulation time
     # returns a Timeline result
     def schedule(self, processes):
-        #reset procces current period to restart simulation
-        for process in processes:
-            process.reset()
-        simTime = 0
+        time = 0
         lostDeathLines = []
         timeline = []
-        while(simTime < self.simTime):
-            nextProcess = self.getNext(processes,simTime)
+        while(time < self.simTime):
+            nextProcess = self.getNext(processes,time)
             if(nextProcess is not None):
-               
                 #nextProcess.printSelf()
-                missed = nextProcess.execute(simTime)
+                missed = nextProcess.execute(time)
                 lostDeathLines += missed
                 #add execution to timeline
-                timeline += [TimeStamp(simTime,nextProcess,nextProcess.duration)]
-                simTime += nextProcess.duration
+                timeline += [TimeStamp(time,nextProcess)]
+                time += nextProcess.duration
             else:
-                simTime = self.getNextTime(simTime, processes)
+                time = self.getNextTime(time, processes)
 
         #get all ines that were remaining
         for i in range(len(processes)):
@@ -210,12 +194,12 @@ class RateMonotonicScheduler:
         
         return ScheduleResult(timeline,lostDeathLines)
 
-    def getNext(self,processes,simTime):
+    def getNext(self,processes,time):
         nextProcess = None
         for index in range(len(processes)):
             process = processes[index]
             #if process has not executed
-            if(process.getNextPeriodStartTime() <= simTime and procces.duration + simTime < process.getNextPeriodEndTime()):
+            if(process.getNextPeriodStartTime() <= time ):
                 #if process is the firt process to be iterated store as best solution
                 if(nextProcess is None):
                     nextProcess = process
@@ -225,12 +209,12 @@ class RateMonotonicScheduler:
         
         return nextProcess
     
-    #gets the closest start simTime of a process 
-    def getNextTime(self,simTime,processes):
+    #gets the closest start time of a process 
+    def getNextTime(self,time,processes):
         nextTime = sys.maxsize
         for index in range(len(processes)):
             process = processes[index]
-            nextTime = min(nextTime, process.getNextTime(simTime))
+            nextTime = min(nextTime, process.getNextPeriodStartTime())
         return nextTime
 
 '''

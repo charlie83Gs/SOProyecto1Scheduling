@@ -1,21 +1,38 @@
 import core
 import sys
 
-HELP = "\n -i <filename> specifies input file for the program \n -o <filename> specifies output file for the program \n -h displays this help screen \n \n The format of the input file is \n \n \t <period> <duration> NEWLINE \n \t <period> <duration> NEWLINE \n \n One line per process "
+HELP = "\n -i <filename> \tspecifies input file for the program "
+HELP += "\n -o <filename> \tspecifies output file for the program "
+HELP += "\n -t <duration> \tspecifies the time this program is going to simulate process scheduling "
+HELP += "\n -h \t\tdisplays this help screen  "
+HELP += "\n \n To select algorith use the flags "
+HELP += "\n\n \t -edf \tfor EDF algorithm "
+HELP += "\n \t -rtm \tfor Rate Monotonic Algorithm "
+HELP += "\n \n The format of the input file is "
+HELP += "\n \n \t <period> <duration>"
+HELP += "\n \t <period> <duration> "
+HELP += "\n \t <period> <duration> "
+HELP += "\n \n One line per process"
 inputFile = None
 outputFile = None
 displayHelp = False
+algorithm = None
+duration = 300
 
 #load arguments from console
 arguments = sys.argv[1:]
 
 #print(arguments)
 
+#TODO
+
 #excutes known commands
 def proccessArg(args):
     global inputFile
     global outputFile
     global displayHelp
+    global algorithm
+    global duration
     if(len(args) <= 0):
         return []
     head = args[0]
@@ -31,6 +48,12 @@ def proccessArg(args):
         print(HELP)
         displayHelp = True
         return args[1:]
+    elif(head == "-t"):
+        duration = int(args[1]) 
+        return args[2:]
+    elif(head == "-edf" or head == "-rtm"):
+        algorithm = head
+        return args[1:]
     else: 
         print("Unknown command " + head)
         print("Or maybe you are missing an option after your " + head + " command")
@@ -45,19 +68,34 @@ while(len(arguments) > 0):
 
 if(inputFile != None and outputFile != None):
     schedule = ""
+    iFile = open(inputFile,"r")
+    decoder = core.FileDecoder()
+    decoded = decoder.decodeFile(iFile)
+
+    #create scheduler
+    scheduler =  core.EdfScheduler(duration)
+    if(algorithm == "-rtm"):
+        scheduler = core.RateMonotonicScheduler(duration)
+        
+    timeline = scheduler.schedule(decoded)
+    schedule = timeline.toString()
+    iFile.close()
     try:
         iFile = open(inputFile,"r")
         decoder = core.FileDecoder()
         decoded = decoder.decodeFile(iFile)
-        scheduler = core.RateMonotonicScheduler(300)
+
+        #create scheduler
+        scheduler =  core.EdfScheduler(duration)
+        if(algorithm == "-rtm"):
+            scheduler = core.RateMonotonicScheduler(duration)
+        
         timeline = scheduler.schedule(decoded)
         schedule = timeline.toString()
         iFile.close()
     except:
         print("failed to open input file")
     
-    
-
     #create store file
     try:
         oFile = open(outputFile,"w+")
