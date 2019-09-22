@@ -15,7 +15,7 @@ class TimelineDrawer:
             fill(self.colors[moment.process.pid])
             #print(self.colors[moment.process.pid])
             text("P" + str(moment.process.pid),x + moment.simTime*sc,y-15)
-            rect(x + moment.simTime*sc,y-10,moment.process.duration*sc,20)
+            rect(x + moment.simTime*sc,y-10,moment.duration*sc,20)
             text(str(moment.simTime)+"ms",x + moment.simTime*sc,y+20)    
     
     def drawMisses(self,x,y,sc):
@@ -24,9 +24,9 @@ class TimelineDrawer:
         misses = self.schedule.missesLine
         for i in range(len(misses)):
             moment = misses[i]
-            line(x + moment.simTime*sc,y-50,x + moment.simTime*sc,y)
+            line(x + moment.simTime*sc,y-50 -  10 * moment.process.pid,x + moment.simTime*sc,y)
             #fill(self.colors[moment.process.pid])
-            text("P" + str(moment.process.pid),x + moment.simTime*sc,y)
+            text("P" + str(moment.process.pid),x + moment.simTime*sc,y + 10 * moment.process.pid)
 
     def drawScaleLines(self,x,y,sc,duration):
         stroke(150)

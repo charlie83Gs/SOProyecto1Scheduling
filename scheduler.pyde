@@ -13,6 +13,7 @@ time = -50
 simulationTime = 300
 previousX = 0
 dragSpeed = 0.3
+edf = True
 
 BUTTONS = []
 
@@ -24,6 +25,7 @@ def setup():
     global loadProcess
     global increaseDuration
     global decreaseDuration
+    global switchAlgorithm
     size(720, 480)
     
     
@@ -33,7 +35,9 @@ def setup():
     BUTTONS += [vs.Button(140,20,100,30, "Save",saveTimeline)]
     BUTTONS += [vs.Button(width -100,20,30,30, "  +",increaseDuration)]
     BUTTONS += [vs.Button(width -50,20,30,30, "  -",decreaseDuration)]
+    BUTTONS += [vs.Button(width -400,20,100,30, "Algorithm",switchAlgorithm)]
     
+    #frameRate(1)
 
 #procesing function to draw on canvas usually executed 30 times per second
 def draw():
@@ -42,10 +46,19 @@ def draw():
     global time
     global simulationTime
     global BUTTONS
+    global edf
     background(255)
     #draw simulation time text
     fill(0)
     stroke(0)
+    
+    current = ""
+    if(edf):
+        current = "Earliest Deathline First"
+    else:
+        current = "Rate Monotonic"
+    text(current,width -400,65)
+    
     text("Duration: " + str(simulationTime)+"ms",width -230,40)
     #buttons should be drawn before translating
     for button in BUTTONS:
@@ -99,6 +112,7 @@ def inputSelected(file):
     global schedule
     global drawer
     global simulationTime
+    global getScheduler
 
     inputFilePath = file.getAbsolutePath()
     iFile = open(inputFilePath,"r")
@@ -108,7 +122,7 @@ def inputSelected(file):
     
     try:
         totalProcess = len(processes)
-        scheduler = core.EdfScheduler(simulationTime)
+        scheduler = getScheduler()
         schedule = scheduler.schedule(processes)
         #print("creating drawed")
       
@@ -120,16 +134,24 @@ def inputSelected(file):
         print("failed to update timeline")
     
     
-    
-    
+def getScheduler():
+    global simulationTime
+    global edf
+    if(edf):
+        return core.EdfScheduler(simulationTime)
+    else:
+        return core.RateMonotonicScheduler2(simulationTime)
+           
 def updateTimeline():
     global processes
     global schedule
     global drawer
     global simulationTime
+    global getScheduler
     try:
         totalProcess = len(processes)
-        scheduler = core.EdfScheduler(simulationTime)
+        scheduler = getScheduler()
+            
         schedule = scheduler.schedule(processes)
         #print("creating drawed")
         if(drawer is not None):
@@ -161,7 +183,15 @@ def saveTimeline():
     if(schedule is None):
         return
     selectOutput("Select a file to process:", "outputSelected")
-    
+
+def switchAlgorithm():
+    global edf
+    global updateTimeline
+    edf = not edf
+
+    #reflect changes on interfaz
+    updateTimeline()
+
 def increaseDuration():
     global simulationTime
     global updateTimeline

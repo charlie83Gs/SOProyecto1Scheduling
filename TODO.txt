@@ -1,0 +1,2 @@
+-bug on edf duplicated process probably on takeover
+-estadisticas

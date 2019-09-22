@@ -75,7 +75,7 @@ if(inputFile != None and outputFile != None):
     #create scheduler
     scheduler =  core.EdfScheduler(duration)
     if(algorithm == "-rtm"):
-        scheduler = core.RateMonotonicScheduler(duration)
+        scheduler = core.RateMonotonicScheduler2(duration)
         
     timeline = scheduler.schedule(decoded)
     schedule = timeline.toString()
@@ -88,7 +88,7 @@ if(inputFile != None and outputFile != None):
         #create scheduler
         scheduler =  core.EdfScheduler(duration)
         if(algorithm == "-rtm"):
-            scheduler = core.RateMonotonicScheduler(duration)
+            scheduler = core.RateMonotonicScheduler2(duration)
         
         timeline = scheduler.schedule(decoded)
         schedule = timeline.toString()
