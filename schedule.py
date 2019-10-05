@@ -79,7 +79,7 @@ if(inputFile != None and outputFile != None):
         scheduler = core.RateMonotonicScheduler2(duration)
         
     timeline = scheduler.schedule(decoded)
-    schedule = timeline.toString()
+    schedule = timeline.toString(duration)
     iFile.close()
     '''
     try:
@@ -93,7 +93,8 @@ if(inputFile != None and outputFile != None):
             scheduler = core.RateMonotonicScheduler2(duration)
         
         timeline = scheduler.schedule(decoded)
-        schedule = timeline.toString()
+        schedule = timeline.toString(duration)
+        
         iFile.close()
     except:
         print("failed to open input file")

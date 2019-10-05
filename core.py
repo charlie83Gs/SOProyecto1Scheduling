@@ -42,7 +42,7 @@ class ScheduleResult:
         self.timeLine = timeLine
         self.missesLine = missesLine
 
-    def toString(self):
+    def toString(self,duration):
         result = "------Timeline------ \n"
         result += "Process \tStart \t\tEnd \n"
         for i in range(len(self.timeLine)):
@@ -53,13 +53,41 @@ class ScheduleResult:
         for i in range(len(self.missesLine)):
             result += self.missesLine[i].toPartString() +  "\n"
         
+        result += self.generateReport(duration)
+        result += self.generateMissesReport(duration)
+
         return result
     
-    def generateReport(self):
+    def generateReport(self, duration):
+        res = {}
+        proc = {}
         for stamp in self.timeLine:
-            print( " P" + str(stamp.process.pid))
-        
+            key = stamp.process.pid
+            if(not key in res.keys()):
+                res[key] = 0
+                proc[key] = stamp.process
+            res[key] += 1
 
+        formated = "\nExecuted---------------- \n"
+        for key in res:
+            formated +=  "P"+ str(key) + ": " + str(res[key]) + "---"+ str(res[key]/(duration/ proc[key].period)*100)+"%\n"
+        
+        
+        return formated
+    
+    def generateMissesReport(self, duration):
+        res = {}
+        for stamp in self.missesLine:
+            key = stamp.process.pid
+            if(not key in res.keys()):
+                res[key] = 0
+            res[key] += 1
+
+        formated = "\nMissed---------------- \n"
+        for key in res:
+            formated +=  "P"+ str(key) + ": " + str(res[key]) + "\n"
+        
+        return formated
 class Process:
     def __init__(self,period, duration,pid):
         self.period = period
