@@ -68,6 +68,7 @@ while(len(arguments) > 0):
 
 if(inputFile != None and outputFile != None):
     schedule = ""
+    '''
     iFile = open(inputFile,"r")
     decoder = core.FileDecoder()
     decoded = decoder.decodeFile(iFile)
@@ -80,6 +81,7 @@ if(inputFile != None and outputFile != None):
     timeline = scheduler.schedule(decoded)
     schedule = timeline.toString()
     iFile.close()
+    '''
     try:
         iFile = open(inputFile,"r")
         decoder = core.FileDecoder()

@@ -54,6 +54,11 @@ class ScheduleResult:
             result += self.missesLine[i].toPartString() +  "\n"
         
         return result
+    
+    def generateReport(self):
+        for stamp in self.timeLine:
+            print( " P" + str(stamp.process.pid))
+        
 
 class Process:
     def __init__(self,period, duration,pid):
@@ -69,9 +74,14 @@ class Process:
     #returns next simTime in wich this should execute
     def getNextPeriodStartTime(self):
         return self.period*self.lastPeriod
+		
     def getNextPeriodEndTime(self):
         return self.period*(self.lastPeriod+1)
-
+	
+    def getCurrentTime(self, simTime):
+        newPeriod = math.floor(float(simTime)/self.period)
+        return newPeriod * self.period
+	
     def getNextTime(self, simTime):
         newPeriod = math.floor(float(simTime)/self.period + 1) #time of next deathline
         return newPeriod * self.period
@@ -79,6 +89,10 @@ class Process:
     def getTakeoverTime(self,simTime):
         newPeriod = math.ceil(simTime/self.period + 1) #time of next deathline
         return newPeriod * self.period
+		
+    def isExecuted(self, simTime):
+        print("last period: " + str(self.lastPeriod) + "-----time: " + str(math.floor(simTime/self.period)) + "----sim time: " +  str(simTime) + "--- period: " + str(self.period))
+        return self.lastPeriod >= math.floor(simTime/self.period)
 
     #executes current process, returns missed periods
     def execute(self, simTime):
@@ -112,7 +126,10 @@ class Process:
             missed += [TimeStamp(self.lastPeriod*self.period,self,self.duration)]
 
         return missed
-
+	
+    def miss(self, simTime,start):
+        return [TimeStamp(start,self,self.duration)]
+	
     #executes current process but does not modify stat
     def validateExecution(self, simTime,time):
         newPeriod = math.floor(simTime/self.period + 1)
@@ -215,9 +232,9 @@ class EdfScheduler:
                     
                     
                     #add takeover simulation
-                    takeover = self.getTakeOverProcess(processes,nextProcess,simTime)
+                    takeover = self.getTakeOverProcess(processes,nextProcess,simTime,nextExecution)
                     if(takeover is not None):
-                        #print("takeover by P" + str(takeover.pid) + " to P" + str(nextProcess.pid))
+                        #print("takeover by P" + str(takeover.pid) + " to P" + str(nextProcess.pid) + " on " + str(simTime))
                         if(not nextExecution.isFinished()):
                             #print("time stamp")
                             #executes in next period or in current period
@@ -231,9 +248,12 @@ class EdfScheduler:
                                     #if procces cannot execute start on next execution
                                     simTime = takeover.getNextPeriodStartTime()
                             #print("add current execution back to queue")
-                            #check again if in this iteration execution finished
+                            #print("st:  " + str(simTime))
+                            #print("exec: " + str(execution))
+							#check again if in this iteration execution finished
                             if(not nextExecution.isFinished() and nextExecution.canExecute(simTime)):
                                 pending += [nextExecution]
+
                             simTime += execution
                         #print("add takeover on top of queue")
                         pending += [Execution(takeover)]
@@ -242,7 +262,8 @@ class EdfScheduler:
                         missed = nextProcess.executePartial(simTime, nextExecution.remaining())
                         lostDeathLines += missed
                     else:
-                        #print("not takeover")
+                        #print("not takeover "+ str(simTime))
+                        #print("start " + str(nextProcess.getNextPeriodStartTime()) + "---end: " + str(nextProcess.getNextPeriodEndTime()))
                         #add execution to timeline
                         #verify if process can execute before deahtline
                         if(simTime + nextExecution.remaining() < nextProcess.getNextTime(simTime)):
@@ -267,7 +288,7 @@ class EdfScheduler:
 
                 
             #nextProcess = self.getNext(processes,simTime)
-
+        #print("pending " + str(len(pending)))
         #get all ines that were remaining
         for i in range(len(processes)):
             lostDeathLines += processes[i].execute(self.simTime)
@@ -312,7 +333,7 @@ class EdfScheduler:
         return nextProcess
 
 
-    def getTakeOverProcess(self,processes,currentProcces,simTime):
+    def getTakeOverProcess(self,processes,currentProcces,simTime,currentExecution):
         takeover = None
         bestTime = sys.maxsize
         for index in range(len(processes)):
@@ -322,9 +343,12 @@ class EdfScheduler:
             #if this procces had calculete nexttime
             if(takeoverTime <= simTime):
                 takeoverTime =  process.getTakeoverTime(simTime)
+				
+            if(takeoverTime < process.getNextPeriodEndTime()):
+                takeoverTime = process.getNextPeriodEndTime()
 
             #print( str(simTime) + " P" + str(process.pid)+"// -tk-" +str(takeoverTime) +  "- P" + str(currentProcces.pid)+"-cu-" + str(currentProcces.getNextPeriodEndTime()))
-            if(takeoverTime < currentProcces.getNextPeriodEndTime() and takeoverTime < bestTime):
+            if(takeoverTime < currentProcces.getNextPeriodEndTime() and takeoverTime < bestTime and simTime + currentExecution.remaining() > process.getNextPeriodStartTime()):
                 #print("bt " + str(bestTime) + "-----tk " + str(takeoverTime) )
                 bestTime = takeoverTime
                 takeover = process
@@ -436,7 +460,8 @@ class RateMonotonicScheduler2:
 
                 
             #nextProcess = self.getNext(processes,simTime)
-
+			
+        
         #get all ines that were remaining
         for i in range(len(processes)):
             lostDeathLines += processes[i].execute(self.simTime)
